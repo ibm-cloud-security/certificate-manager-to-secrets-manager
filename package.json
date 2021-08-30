@@ -1,0 +1,29 @@
+{
+  "name": "secrets-manager-cm-migration-scripts",
+  "version": "1.0.0",
+  "description": "#### Before using any of scripts:",
+  "main": "cm_migration.js",
+  "scripts": {
+    "test": "jest",
+    "cm_inventory": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"cm_inventory\"})'",
+    "cm_cert_copy": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"cm_cert_copy\"})'",
+    "cm_instance_copy": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"cm_instance_copy\"})'"
+
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.ibm.com/security-services/secrets-manager-cm-migration-scripts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^10.0.0",
+    "querystring": "^0.2.1"
+  },
+  "devDependencies": {
+    "jest": "^27.0.6",
+    "nock": "^13.1.1"
+  }
+}
