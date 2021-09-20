@@ -1,24 +1,26 @@
 {
   "name": "secrets-manager-cm-migration-scripts",
   "version": "1.0.0",
-  "description": "Certificate Manager to Secrets Manager migration scripts",
+  "description": "#### Before using any of scripts:",
   "main": "cm_migration.js",
   "scripts": {
     "test": "jest",
     "cm_inventory": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"cm_inventory\"})'",
     "cm_cert_copy": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"cm_cert_copy\"})'",
+    "cm_instance_copy": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"cm_instance_copy\"})'",
+    "sm_public_cert": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"sm_public_cert\"})'",
+    "sm_instance_public_cert": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"sm_instance_public_cert\"})'",
     "cm_instance_copy": "node -e 'require(\"./cm_migration.js\").main({\"SCRIPT_NAME\":\"cm_instance_copy\"})'"
-
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ibm-cloud-security/certificate-manager-to-secrets-manager.git"
+    "url": "https://github.ibm.com/security-services/secrets-manager-cm-migration-scripts.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.21.1",
+    "axios": "^0.21.4",
     "dotenv": "^10.0.0",
     "querystring": "^0.2.1"
   },
