@@ -884,6 +884,15 @@ const get_cert_data_not_imported_nock_test = nock(get_cert_data_url_test)
 
 describe('cm_instance_copy test', () => {
 
+    test('invalid parameter ONLY_IMPORTED', async () => {
+        let parameters_new = {...parameters};
+        parameters_new.ONLY_IMPORTED = 'invalid';
+        const res = await main_func.main(parameters_new);
+        expect(res).toEqual({
+            "error": {"error": "Certificate migration failed: Error: Parameter 'ONLY_IMPORTED' is invalid"}
+        });
+    });
+
     test('valid input CM = bluemix, SM = staging, only_imported = true', async () => {
         const res = await main_func.main(parameters);
         expect(res).toEqual({

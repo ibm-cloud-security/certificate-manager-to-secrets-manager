@@ -13,11 +13,14 @@ const get_cert_endpoint = 'cloud.ibm.com/api/v2/certificate/';
 const secret_group_endpoint = 'appdomain.cloud/api/v1/secret_groups';
 const create_secret_endpoint = 'appdomain.cloud/api/v1/secrets/imported_cert';
 
+const order_cert_endpoint = 'appdomain.cloud/api/v1/secrets/public_cert';
+const get_public_cert_endpoint = 'cloud.ibm.com/api/v1/certificate/';
+
 module.exports = {"main": main, "parameters_validation": parameters_validation, "get_token": get_token, "add_cert_to_secret": add_cert_to_secret,
     "get_cert_data": get_cert_data, "catch_error": catch_error, "cm_inventory": cm_inventory, "get_cert_list": get_cert_list,
     "get_secret_group_id": get_secret_group_id, "create_secret": create_secret, "cm_instance_copy": cm_instance_copy,
-    "get_instances_data": get_instances_data, "get_notification_number": get_notification_number};
-
+    "get_instances_data": get_instances_data, "get_notification_number": get_notification_number,
+    "order_certificate": order_certificate, "get_public_cert_data": get_public_cert_data};
 
 async function main(parameters){
     let cm_apikey = process.env.CM_APIKEY;
@@ -29,6 +32,9 @@ async function main(parameters){
     let secret_group_name = process.env.SECRET_GROUP_NAME;
     let is_test_account = process.env.IS_TEST_ACCOUNT;
     let only_imported = process.env.ONLY_IMPORTED;
+    let ca_configuration_name = process.env.CA_CONFIGURATION_NAME;
+    let dns_configuration_name = process.env.DNS_PROVIDER_CONFIGURATION_NAME;
+    let bundle_certs = process.env.BUNDLE_CERTS;
 
     if(parameters !== undefined){
         if (parameters.CM_APIKEY) cm_apikey = parameters.CM_APIKEY;
@@ -40,6 +46,9 @@ async function main(parameters){
         if (parameters.SECRET_GROUP_NAME) secret_group_name = parameters.SECRET_GROUP_NAME;
         if (parameters.IS_TEST_ACCOUNT) is_test_account = parameters.IS_TEST_ACCOUNT;
         if (parameters.ONLY_IMPORTED) only_imported = parameters.ONLY_IMPORTED;
+        if (parameters.CA_CONFIGURATION_NAME) ca_configuration_name = parameters.CA_CONFIGURATION_NAME;
+        if (parameters.DNS_PROVIDER_CONFIGURATION_NAME) dns_configuration_name = parameters.DNS_PROVIDER_CONFIGURATION_NAME;
+        if (parameters.BUNDLE_CERTS) bundle_certs = parameters.BUNDLE_CERTS;
     }
 
     if(is_test_account === undefined){
@@ -50,6 +59,10 @@ async function main(parameters){
         only_imported = true;
     }
 
+    if(bundle_certs === undefined){
+        bundle_certs = true;
+    }
+
     if(script_name === 'cm_inventory'){
         return await cm_inventory(cm_apikey, is_test_account);
     }
@@ -58,6 +71,12 @@ async function main(parameters){
     }
     else if(script_name === 'cm_instance_copy'){
         return await cm_instance_copy(cm_apikey, sm_apikey, cm_crn, sm_crn, secret_group_name, only_imported);
+    }
+    else if(script_name === 'sm_public_cert'){
+        return await sm_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, secret_group_name, ca_configuration_name, dns_configuration_name, bundle_certs);
+    }
+    else if(script_name === 'sm_instance_public_cert'){
+        return await sm_instance_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, secret_group_name, ca_configuration_name, dns_configuration_name, bundle_certs);
     }
     else{
         if(script_name === undefined){
@@ -100,7 +119,7 @@ async function cm_inventory(apikey, is_test_account) {
 
 async function cm_cert_copy(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, secret_group_name, only_imported){
     try {
-        const valid_arr = await parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, only_imported);
+        const valid_arr = await parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, only_imported, "ONLY_IMPORTED");
         const cm_location = valid_arr[0];
         const sm_location = valid_arr[1];
         const sm_instance_id = valid_arr[2];
@@ -132,7 +151,7 @@ async function cm_cert_copy(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, secre
 
 async function cm_instance_copy(cm_apikey, sm_apikey, cm_crn, sm_crn, secret_group_name, only_imported){
     try {
-        const valid_arr = await parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, "", only_imported);
+        const valid_arr = await parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, "", only_imported, "ONLY_IMPORTED");
         const cm_location = valid_arr[0];
         const sm_location = valid_arr[1];
         const sm_instance_id = valid_arr[2];
@@ -173,6 +192,114 @@ async function cm_instance_copy(cm_apikey, sm_apikey, cm_crn, sm_crn, secret_gro
     }
 }
 
+async function sm_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, secret_group_name, ca_configuration_name, dns_configuration_name, bundle_certs){
+    try{
+        if(ca_configuration_name === undefined){
+            let err = new Error("Parameter 'CA_CONFIGURATION_NAME' is missing");
+            console.log(`Error: Certificate migration failed: ${err}`);
+            return {"error" : {"error": `Certificate migration failed: ${err}`}};
+        }
+        if(dns_configuration_name === undefined){
+            let err = new Error("Parameter 'DNS_PROVIDER_CONFIGURATION_NAME' is missing");
+            console.log(`Error: Certificate migration failed: ${err}`);
+            return {"error" : {"error": `Certificate migration failed: ${err}`}};
+        }
+
+        const valid_arr = await parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, bundle_certs, "BUNDLE_CERTS");
+        const cm_location = valid_arr[0];
+        const sm_location = valid_arr[1];
+        const sm_instance_id = valid_arr[2];
+        const cm_api_prefix = valid_arr[3];
+        const sm_api_prefix = valid_arr[4];
+        bundle_certs = valid_arr[5];
+
+        const cm_token = await get_token(cm_apikey, cm_api_prefix, "CM");
+        const sm_token = await get_token(sm_apikey, sm_api_prefix, "SM");
+
+        const cert_data = await get_public_cert_data(cm_crn, cm_location, cert_id, cm_token, cm_api_prefix);
+
+        if(cert_data.imported){
+            throw new Error("The certificate you are trying to order is an imported certificate.")
+        }
+
+        let secret_group_id = secret_group_name;
+        if(secret_group_name !== undefined){
+            secret_group_id = await get_secret_group_id(sm_instance_id, secret_group_name, sm_location, sm_token, sm_api_prefix);
+            if (secret_group_id instanceof Error){
+                throw secret_group_id;
+            }
+        }
+
+        await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
+
+        console.log(bundle_certs);
+
+        console.log("Certificate ordered successfully!");
+        return { message: "Certificate ordered successfully!" };
+
+    }
+    catch(err){
+        console.log(`Error: Certificate migration failed: ${err}`);
+        return {"error" : {"error": `Certificate migration failed: ${err}`}};
+    }
+}
+
+async function sm_instance_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, secret_group_name, ca_configuration_name, dns_configuration_name, bundle_certs){
+    try{
+        if(ca_configuration_name === undefined){
+            let err = new Error("Parameter 'CA_CONFIGURATION_NAME' is missing");
+            console.log(`Error: Certificate migration failed: ${err}`);
+            return {"error" : {"error": `Certificate migration failed: ${err}`}};
+        }
+        if(dns_configuration_name === undefined){
+            let err = new Error("Parameter 'DNS_PROVIDER_CONFIGURATION_NAME' is missing");
+            console.log(`Error: Certificate migration failed: ${err}`);
+            return {"error" : {"error": `Certificate migration failed: ${err}`}};
+        }
+
+        const valid_arr = await parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, "", bundle_certs, "BUNDLE_CERTS");
+        const cm_location = valid_arr[0];
+        const sm_location = valid_arr[1];
+        const sm_instance_id = valid_arr[2];
+        const cm_api_prefix = valid_arr[3];
+        const sm_api_prefix = valid_arr[4];
+        bundle_certs = valid_arr[5];
+
+        const cm_token = await get_token(cm_apikey, cm_api_prefix, "CM");
+        const sm_token = await get_token(sm_apikey, sm_api_prefix, "SM");
+
+        let secret_group_id = secret_group_name;
+        if(secret_group_name !== undefined){
+            secret_group_id = await get_secret_group_id(sm_instance_id, secret_group_name, sm_location, sm_token, sm_api_prefix);
+            if (secret_group_id instanceof Error){
+                throw secret_group_id;
+            }
+        }
+
+        const cert_lst = await get_cert_list(false, cm_crn, cm_location, cm_api_prefix, cm_token, 200);
+
+        let report_json = {};
+        for(let i=0; i<cert_lst.length; i++){
+            if(!cert_lst[i].imported){
+                try{
+                    console.log("Processing certificate: '" + cert_lst[i].name + "', id: " + cert_lst[i].id);
+                    const cert_data = await get_public_cert_data(cm_crn, cm_location, cert_lst[i].id, cm_token, cm_api_prefix);
+                    await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
+                    report_json["Certificate: '" + cert_lst[i].name + "', id: " + cert_lst[i].id] =  "ordered successfully!";
+                }
+                catch(err){
+                    report_json["Certificate: '" + cert_lst[i].name + "', id: " + cert_lst[i].id] =  "migration failed: " + err.message;
+                }
+            }
+        }
+        console.log(report_json);
+        return report_json;
+    }
+    catch(err){
+        console.log(`Error: Certificate migration failed: ${err}`);
+        return {"error" : {"error": `Certificate migration failed: ${err}`}};
+    }
+}
 
 /////////// get_token, catch_error, parameter_validation ///////////
 
@@ -236,7 +363,7 @@ function catch_error(err, format){
 
 }
 
-function parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, only_imported){
+function parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, boolean_var, boolean_var_name){
     let cm_data = crn_validation(cm_crn, "CM");
     let errMsg = cm_data[0];
 
@@ -260,24 +387,24 @@ function parameters_validation(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, on
         errMsg = "Parameter 'SM_APIKEY' is missing";
     }
 
-    if(!(typeof only_imported === 'boolean')){
-        if(only_imported === 'true'){
-            only_imported = true;
+    if(!(typeof boolean_var === 'boolean')){
+        if(boolean_var === 'true'){
+            boolean_var = true;
         }
 
-        else if(only_imported === 'false'){
-            only_imported = false;
+        else if(boolean_var === 'false'){
+            boolean_var = false;
         }
 
         else{
-            errMsg = "Parameter 'ONLY_IMPORTED' is invalid";
+            errMsg = "Parameter '" + boolean_var_name + "' is invalid";
         }
     }
 
     if(errMsg) {
         throw new Error(errMsg);
     }
-    return [cm_data[1], sm_data[1], sm_data[3], cm_data[2], sm_data[2], only_imported];
+    return [cm_data[1], sm_data[1], sm_data[3], cm_data[2], sm_data[2], boolean_var];
 }
 
 function crn_validation(crn, cm_or_sm){
@@ -605,7 +732,7 @@ async function get_cert_list_call(inventory_or_instanceCopy, cm_token, cm_locati
             cert_id_lst.push(response.data.certificates[i]._id);
         }
         else{
-            cert_id_lst.push({"id" :response.data.certificates[i]._id.split(":")[9], "name": response.data.certificates[i].name});
+            cert_id_lst.push({"id" :response.data.certificates[i]._id.split(":")[9], "name": response.data.certificates[i].name, "imported": response.data.certificates[i].imported});
         }
     }
 
@@ -616,4 +743,82 @@ async function get_cert_list_call(inventory_or_instanceCopy, cm_token, cm_locati
 
 }
 
+
+/////////// sm_order_cert functions ///////////
+
+async function get_public_cert_data(cm_crn, location, cert_id, cm_token, cm_api_prefix){
+    const crn_enc = encodeURIComponent((cm_crn.slice(0, -1) + 'certificate:' + cert_id));
+    try{
+        const data = await axios.get('https://' + location + '.certificate-manager' + cm_api_prefix + get_public_cert_endpoint + crn_enc + '/metadata' , {
+            headers: {
+                'Authorization': 'Bearer ' + cm_token
+            }
+        });
+        return data.data;
+    }
+    catch(err){
+        catch_error(err, 1);
+    }
+}
+
+async function order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs){
+    try{
+        let key_algorithm = cert_data.key_algorithm;
+        if(key_algorithm === 'rsaEncryption 2048 bit'){
+            key_algorithm = 'RSA2048';
+        }
+        else if(key_algorithm === 'rsaEncryption 4096 bit'){
+            key_algorithm = 'RSA4096';
+        }
+        else{
+            throw new Error("Key algorithm is invalid");
+        }
+
+        let domains = cert_data.domains;
+        const common_name = domains.shift();
+
+        let rotation = {
+            "auto_rotate": cert_data.order_policy.auto_renew_enabled,
+            "rotate_keys": false
+        };
+
+        const req_data = {
+            "metadata": {
+                "collection_type": "application/vnd.ibm.secrets-manager.secret+json",
+                "collection_total": 1
+            },
+            "resources": [
+                {
+                    "description": cert_data.description,
+                    "secret_group_id": secret_group_id,
+                    "ca": ca_configuration_name,
+                    "dns": dns_configuration_name,
+                    "common_name": common_name,
+                    "alt_names": domains,
+                    "bundle_certs": bundle_certs,
+                    "key_algorithm": key_algorithm,
+                    "rotation": rotation
+                }
+            ]};
+
+        // Secrets Manager does not support secret name with spaces. Replace with dashes
+        if(cert_data.name !== undefined){
+            req_data.resources[0].name = cert_data.name.replace(/\s+/g, '-');
+        }
+        if(cert_data.description !== undefined && cert_data.description.trim() === "") {
+            req_data.resources[0].description = undefined;
+        }
+
+        await axios.post('https://' + sm_instance_id + '.' + sm_location + '.secrets-manager' + sm_api_prefix +
+            order_cert_endpoint, req_data, {
+            headers: {
+                'Authorization': 'Bearer ' + sm_token,
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+    catch(err){
+        catch_error(err, 2);
+    }
+}
 

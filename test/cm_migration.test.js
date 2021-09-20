@@ -289,3 +289,21 @@ describe('parameters incorrect tests', () => {
 
     })
 });
+
+        test('cm bluemix, sm staging test', async () => {
+            const data = await main_func.parameters_validation(parameters.CM_APIKEY, parameters.SM_APIKEY, parameters.CM_INSTANCE_CRN, "sm-crn:1:staging:3:4:sm_location:6:sm_crn", parameters.CERTIFICATE_ID, true);
+            expect(data).toEqual(["cm_location", "sm_location", "sm_crn", '.', '.test.', true]);
+        });
+
+        test('cm staging, sm bluemix test', async () => {
+            const data = await main_func.parameters_validation(parameters.CM_APIKEY, parameters.SM_APIKEY, "cm_crn:1:staging:3:4:cm_location", parameters.SM_INSTANCE_CRN, parameters.CERTIFICATE_ID, 'false');
+            expect(data).toEqual(["cm_location", "sm_location", "sm_crn", '.test.', '.', false]);
+        });
+
+        test('cm staging, sm staging test', async () => {
+            const data = await main_func.parameters_validation(parameters.CM_APIKEY, parameters.SM_APIKEY, "cm_crn:1:staging:3:4:cm_location", "sm-crn:1:staging:3:4:sm_location:6:sm_crn", parameters.CERTIFICATE_ID, false);
+            expect(data).toEqual(["cm_location", "sm_location", "sm_crn", '.test.', '.test.', false]);
+        });
+
+    })
+});

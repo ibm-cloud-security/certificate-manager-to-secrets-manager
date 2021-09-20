@@ -11,7 +11,9 @@ beforeAll(() => {
         "cm_instance_crn": process.env.CM_INSTANCE_CRN,
         "sm_instance_crn": process.env.SM_INSTANCE_CRN,
         "secret_group_name": process.env.SECRET_GROUP_NAME,
-        "cert_id": process.env.CERTIFICATE_ID
+        "cert_id": process.env.CERTIFICATE_ID,
+        "ca_configuration_name": process.env.CA_CONFIGURATION_NAME,
+        "dns_provider_configuration_name": process.env.DNS_PROVIDER_CONFIGURATION_NAME
     };
 
     delete process.env.SCRIPT_NAME;
@@ -21,6 +23,8 @@ beforeAll(() => {
     delete process.env.SM_INSTANCE_CRN;
     delete process.env.SECRET_GROUP_NAME;
     delete process.env.CERTIFICATE_ID;
+    delete process.env.CA_CONFIGURATION_NAME;
+    delete process.env.DNS_PROVIDER_CONFIGURATION_NAME;
 
 });
 
@@ -32,17 +36,22 @@ afterAll(() => {
     process.env.SM_INSTANCE_CRN = save_env.sm_instance_crn;
     process.env.SECRET_GROUP_NAME = save_env.secret_group_name;
     process.env.CERTIFICATE_ID = save_env.cert_id;
+    process.env.CA_CONFIGURATION_NAME = save_env.ca_configuration_name;
+    process.env.DNS_PROVIDER_CONFIGURATION_NAME = save_env.dns_provider_configuration_name;
 });
 
 
 const parameters = {
-    "SCRIPT_NAME": "cm_cert_copy",
+    "SCRIPT_NAME": "sm_public_cert",
     "CM_APIKEY": "cm_apikey",
     "SM_APIKEY": "sm_apikey",
     "CM_INSTANCE_CRN": "cm_crn:1:bluemix:3:4:eu-gb",
     "SM_INSTANCE_CRN": "sm-crn:1:staging:3:4:eu-gb:6:sm_instance_id",
     "SECRET_GROUP_NAME": "Group2",
-    "CERTIFICATE_ID": 'cert_id'
+    "CERTIFICATE_ID": 'cert_id',
+    "CA_CONFIGURATION_NAME": 'ca_configuration_name cert',
+    "DNS_PROVIDER_CONFIGURATION_NAME": 'dns_configuration_name cert'
+
 };
 
 const iam_bluemix_url = 'https://iam.cloud.ibm.com';
@@ -57,17 +66,16 @@ const iam_grant_type_cm_invalid_500 = 'grant_type=urn%3Aibm%3Aparams%3Aoauth%3Ag
 const iam_grant_type_sm_invalid_400 = 'grant_type=urn%3Aibm%3Aparams%3Aoauth%3Agrant-type%3Aapikey&apikey=sm_apikey_invalid_400';
 const iam_grant_type_sm_invalid_500 = 'grant_type=urn%3Aibm%3Aparams%3Aoauth%3Agrant-type%3Aapikey&apikey=sm_apikey_invalid_500';
 
-const get_cert_data_url = 'https://eu-gb.certificate-manager.cloud.ibm.com';
-const get_cert_data_endpoint = '/api/v2/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id';
-const get_cert_data_endpoint_not_imported = '/api/v2/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id_not_imported';
-const get_cert_data_endpoint_400 = '/api/v2/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id_400';
-const get_cert_data_endpoint_500 = '/api/v2/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id_500';
+const get_public_cert_data_url = 'https://eu-gb.certificate-manager.cloud.ibm.com';
+const get_public_cert_data_endpoint = '/api/v1/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id/metadata';
+const get_public_cert_data_endpoint_imported = '/api/v1/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id_imported/metadata';
+const get_public_cert_data_endpoint_400 = '/api/v1/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id_400/metadata';
+const get_public_cert_data_endpoint_500 = '/api/v1/certificate/cm_crn%3A1%3Abluemix%3A3%3A4%3Aeu-gcertificate%3Acert_id_500/metadata';
 
-const get_cert_data_test_url = 'https://eu-gb.certificate-manager.test.cloud.ibm.com';
-const get_cert_data_endpoint_test = '/api/v2/certificate/cm_crn%3A1%3Astaging%3A3%3A4%3Aeu-gcertificate%3Acert_id';
-const get_cert_data_endpoint_not_imported_test = '/api/v2/certificate/cm_crn%3A1%3Astaging%3A3%3A4%3Aeu-gcertificate%3Acert_id_not_imported';
-const get_cert_data_endpoint_400_test = '/api/v2/certificate/cm_crn%3A1%3Astaging%3A3%3A4%3Aeu-gcertificate%3Acert_id_400';
-const get_cert_data_endpoint_500_test = '/api/v2/certificate/cm_crn%3A1%3Astaging%3A3%3A4%3Aeu-gcertificate%3Acert_id_500';
+const get_public_cert_data_test_url = 'https://eu-gb.certificate-manager.test.cloud.ibm.com';
+const get_public_cert_data_endpoint_test = '/api/v1/certificate/cm_crn%3A1%3Astaging%3A3%3A4%3Aeu-gcertificate%3Acert_id/metadata';
+const get_public_cert_data_endpoint_400_test = '/api/v1/certificate/cm_crn%3A1%3Astaging%3A3%3A4%3Aeu-gcertificate%3Acert_id_400/metadata';
+const get_public_cert_data_endpoint_500_test = '/api/v1/certificate/cm_crn%3A1%3Astaging%3A3%3A4%3Aeu-gcertificate%3Acert_id_500/metadata';
 
 const get_secret_group_id_url = 'https://sm_instance_id.eu-gb.secrets-manager.appdomain.cloud';
 const get_secret_group_id_url_400 = 'https://sm_instance_id_400.eu-gb.secrets-manager.appdomain.cloud';
@@ -79,19 +87,40 @@ const get_secret_group_id_url_test = 'https://sm_instance_id.eu-gb.secrets-manag
 const get_secret_group_id_url_400_test = 'https://sm_instance_id_400.eu-gb.secrets-manager.test.appdomain.cloud';
 const get_secret_group_id_url_500_test = 'https://sm_instance_id_500.eu-gb.secrets-manager.test.appdomain.cloud';
 
-const create_secret_url = 'https://sm_instance_id.eu-gb.secrets-manager.appdomain.cloud';
-const create_secret_url_400 = 'https://sm_instance_id_create_secret_400.eu-gb.secrets-manager.appdomain.cloud';
-const get_secret_group_id_url_secret_400 = 'https://sm_instance_id_create_secret_400.eu-gb.secrets-manager.appdomain.cloud';
-const create_secret_url_500 = 'https://sm_instance_id_create_secret_500.eu-gb.secrets-manager.appdomain.cloud';
-const get_secret_group_id_url_secret_500 = 'https://sm_instance_id_create_secret_500.eu-gb.secrets-manager.appdomain.cloud';
+const order_cert_url = 'https://sm_instance_id.eu-gb.secrets-manager.appdomain.cloud';
+const order_cert_url_400 = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.appdomain.cloud';
+const get_secret_group_id_order_400_url = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.appdomain.cloud';
+const order_cert_url_500 = 'https://sm_instance_id_500_order.eu-gb.secrets-manager.appdomain.cloud';
+const get_secret_group_id_order_500_url = 'https://sm_instance_id_500_order.eu-gb.secrets-manager.appdomain.cloud';
 
-const create_secret_endpoint = '/api/v1/secrets/imported_cert';
+const order_cert_endpoint = '/api/v1/secrets/public_cert';
 
-const create_secret_url_test = 'https://sm_instance_id.eu-gb.secrets-manager.test.appdomain.cloud';
-const create_secret_url_400_test = 'https://sm_instance_id_create_secret_400.eu-gb.secrets-manager.test.appdomain.cloud';
-const get_secret_group_id_url_secret_400_test = 'https://sm_instance_id_create_secret_400.eu-gb.secrets-manager.test.appdomain.cloud';
-const create_secret_url_500_test = 'https://sm_instance_id_create_secret_500.eu-gb.secrets-manager.test.appdomain.cloud';
-const get_secret_group_id_url_secret_500_test = 'https://sm_instance_id_create_secret_500.eu-gb.secrets-manager.test.appdomain.cloud';
+const order_cert_url_test = 'https://sm_instance_id.eu-gb.secrets-manager.test.appdomain.cloud';
+const order_cert_url_400_test = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.test.appdomain.cloud';
+const get_secret_group_id_order_400_url_test = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.test.appdomain.cloud';
+const order_cert_url_500_test = 'https://sm_instance_id_500_order.eu-gb.secrets-manager.test.appdomain.cloud';
+const get_secret_group_id_order_500_url_test = 'https://sm_instance_id_500_order.eu-gb.secrets-manager.test.appdomain.cloud';
+
+const cert_data_imported = {
+    "name": "cert_name_not_imported",
+    "description":"description cert",
+    "imported": true,
+    "key_algorithm": "rsaEncryption 2048 bit",
+    "order_policy": {
+        "auto_renew_enabled": false
+    }
+};
+
+const cert_data_not_imported = {
+    "name": "cert_name_not_imported",
+    "description":"description cert",
+    "imported": false,
+    "domains": ["common_name_cert", "domain2", "domain3"],
+    "key_algorithm": "rsaEncryption 2048 bit",
+    "order_policy": {
+        "auto_renew_enabled": true
+    }
+};
 
 const req_data = {
     "metadata": {
@@ -100,34 +129,20 @@ const req_data = {
     },
     "resources": [
         {
-            "name": "cert_name",
-            "secret_group_id": "Group2 id",
-            "certificate": "cert content",
+            "name": "cert_name_not_imported",
+            "description": "description cert",
+            "ca": "ca_configuration_name cert",
+            "dns": "dns_configuration_name cert",
+            "common_name": "common_name cert",
+            "alt_names": ["domain2", "domain3"],
+            "key_algorithm": "RSA2048",
+            "bundle_certs": true,
+            "rotation": {
+                "auto_rotate": true,
+                "rotate_keys": false
+            }
         }
-    ]
-};
-
-const cert_data_imported = {
-    "name": "cert_name_imported",
-    "description":"description cert",
-    "imported": true,
-    "data": {
-        "content": "cert content",
-        "priv_key": "cert priv key",
-        "intermediate": "cert intermediate"
-    }
-};
-
-const cert_data_not_imported = {
-    "name": "cert_name_not_imported",
-    "description":"description cert",
-    "imported": false,
-    "data": {
-        "content": "cert content",
-        "priv_key": "cert priv key",
-        "intermediate": "cert intermediate"
-    }
-};
+    ]};
 
 
 /////////////////////// IAM token (get_token) tests ///////////////////////
@@ -216,52 +231,58 @@ describe('IAM Token tests', () => {
 
 });
 
+
 /////////////////////// get_cert_data tests ///////////////////////
 
-const get_cert_data_nock = nock(get_cert_data_url)
+const get_public_cert_data_nock = nock(get_public_cert_data_url)
     .persist()
-    .get(get_cert_data_endpoint)
-    .reply(200, cert_data_imported);
-
-const get_cert_data_nock_test = nock(get_cert_data_test_url)
-    .persist()
-    .get(get_cert_data_endpoint_test)
+    .get(get_public_cert_data_endpoint)
     .reply(200, cert_data_not_imported);
 
-get_cert_data_nock
+const get_public_cert_data_nock_test = nock(get_public_cert_data_test_url)
     .persist()
-    .get(get_cert_data_endpoint_400)
+    .get(get_public_cert_data_endpoint_test)
+    .reply(200, cert_data_not_imported);
+
+const get_public_cert_data_imported_nock = nock(get_public_cert_data_url)
+    .persist()
+    .get(get_public_cert_data_endpoint_imported)
+    .reply(200, cert_data_imported);
+
+get_public_cert_data_nock
+    .persist()
+    .get(get_public_cert_data_endpoint_400)
     .reply(400, {"message": "Error message 400", "code": "code of 400"});
 
-get_cert_data_nock
+get_public_cert_data_nock
     .persist()
-    .get(get_cert_data_endpoint_500)
+    .get(get_public_cert_data_endpoint_500)
     .reply(500, {});
 
-get_cert_data_nock_test
+get_public_cert_data_nock_test
     .persist()
-    .get(get_cert_data_endpoint_400_test)
+    .get(get_public_cert_data_endpoint_400_test)
     .reply(400, {"message": "Error message 400", "code": "code of 400"});
 
-get_cert_data_nock_test
+get_public_cert_data_nock_test
     .persist()
-    .get(get_cert_data_endpoint_500_test)
+    .get(get_public_cert_data_endpoint_500_test)
     .reply(500, {});
 
-describe('get_cert_data test', () => {
+describe('get_public_cert_data test', () => {
 
     test('valid input bluemix', async () => {
-        const res = await main_func.get_cert_data(parameters.CM_INSTANCE_CRN, "eu-gb",
+        const res = await main_func.get_public_cert_data(parameters.CM_INSTANCE_CRN, "eu-gb",
             parameters.CERTIFICATE_ID, "token", '.');
-        expect(res).toEqual(cert_data_imported);
+        expect(res).toEqual(cert_data_not_imported);
     });
 
     test('Error 400 bluemix', async () => {
         let parameters_new = {...parameters};
         parameters_new.CERTIFICATE_ID = "cert_id_400";
         const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 400: Error message 400" +
-                    " (code: code of 400). Error in request: " + get_cert_data_url + get_cert_data_endpoint_400}})
+        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 400: Error message 400"
+                + " (code: code of 400). Error in request: " + get_public_cert_data_url + get_public_cert_data_endpoint_400}})
     });
 
     test('Error 500 bluemix', async () => {
@@ -269,11 +290,11 @@ describe('get_cert_data test', () => {
         parameters_new.CERTIFICATE_ID = "cert_id_500";
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 500:" +
-                    " Something went wrong - please try again."}})
+                " Something went wrong - please try again."}})
     });
 
     test('valid input staging', async () => {
-        const res = await main_func.get_cert_data('cm_crn:1:staging:3:4:eu-gb', "eu-gb",
+        const res = await main_func.get_public_cert_data('cm_crn:1:staging:3:4:eu-gb', "eu-gb",
             parameters.CERTIFICATE_ID, "token", '.test.');
         expect(res).toEqual(cert_data_not_imported);
     });
@@ -283,9 +304,9 @@ describe('get_cert_data test', () => {
         parameters_new.CERTIFICATE_ID = "cert_id_400";
         parameters_new.CM_INSTANCE_CRN = 'cm_crn:1:staging:3:4:eu-gb';
         const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 400: Error message 400 " +
-                    "(code: code of 400)." +
-                    " Error in request: " + get_cert_data_test_url + get_cert_data_endpoint_400_test}})
+        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 400: Error message 400"
+                + " (code: code of 400)." +
+                " Error in request: " + get_public_cert_data_test_url + get_public_cert_data_endpoint_400_test}})
     });
 
     test('Error 500 staging', async () => {
@@ -294,7 +315,15 @@ describe('get_cert_data test', () => {
         parameters_new.CM_INSTANCE_CRN = 'cm_crn:1:staging:3:4:eu-gb';
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 500:" +
-                    " Something went wrong - please try again."}})
+                " Something went wrong - please try again."}})
+    });
+
+    test('invalid input bluemix - imported cert', async () => {
+        let parameters_new = {...parameters};
+        parameters_new.CERTIFICATE_ID = "cert_id_imported";
+        const res = await main_func.main(parameters_new);
+        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: " +
+                    "The certificate you are trying to order is an imported certificate."}});
     });
 
 });
@@ -356,9 +385,9 @@ describe('get_secret_group_id test', () => {
         let parameters_new = {...parameters};
         parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id_400";
         const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": 'Certificate migration failed: Error: Error code 400: Error with secret' +
-                    ' group name: error message 400. Error in request: '
-                    + get_secret_group_id_url_400 + get_secret_group_id_endpoint}})
+        expect(res).toEqual({"error": {"error": 'Certificate migration failed: Error: Error code 400: Error with secret'
+                + ' group name: error message 400. Error in request: '
+                + get_secret_group_id_url_400 + get_secret_group_id_endpoint}})
     });
 
     test('Error 500 bluemix', async () => {
@@ -366,7 +395,7 @@ describe('get_secret_group_id test', () => {
         parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id_500";
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 500: " +
-                    "Something went wrong - please try again."}})
+                "Something went wrong - please try again."}})
     });
 
     test('valid group name staging', async () => {
@@ -385,9 +414,9 @@ describe('get_secret_group_id test', () => {
         let parameters_new = {...parameters};
         parameters_new.SM_INSTANCE_CRN = "sm-crn:1:staging:3:4:eu-gb:6:sm_instance_id_400";
         const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 400: Error with " +
-                    "secret group name: error message 400. Error in request: " + get_secret_group_id_url_400_test +
-                    get_secret_group_id_endpoint}})
+        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: " +
+                    "Error code 400: Error with secret group name: error message 400. " +
+                    "Error in request: " + get_secret_group_id_url_400_test + get_secret_group_id_endpoint}})
     });
 
     test('Error 500 staging', async () => {
@@ -395,260 +424,167 @@ describe('get_secret_group_id test', () => {
         parameters_new.SM_INSTANCE_CRN = "sm-crn:1:staging:3:4:eu-gb:6:sm_instance_id_500";
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 500: " +
-                    "Something went wrong - please try again."}})
+                "Something went wrong - please try again."}})
     });
 });
 
-/////////////////////// add_cert_to_secret tests ///////////////////////
 
+/////////////////////// order_cert tests ///////////////////////
 
-describe('add_cert_to_secret tests', () => {
-
-    test('valid output - bluemix - imported + only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_imported, "eu-gb", "token", ".", true);
-        expect(res).toEqual(true);
-    });
-
-    test('valid output - bluemix - not imported + only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_not_imported, "eu-gb", "token", ".", true);
-        expect(res).toEqual(false);
-    });
-
-    test('valid output - bluemix - imported + not only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_imported, "eu-gb", "token", ".", false);
-        expect(res).toEqual(true);
-    });
-
-    test('valid output - bluemix - not imported + not only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_not_imported, "eu-gb", "token", ".", false);
-        expect(res).toEqual(true);
-    });
-
-    test('valid output - staging - imported + only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_imported, "eu-gb", "token", ".test.", true);
-        expect(res).toEqual(true);
-    });
-
-    test('valid output - staging - not imported + only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_not_imported, "eu-gb", "token", ".test.", true);
-        expect(res).toEqual(false);
-    });
-
-    test('valid output - staging - imported + not only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_imported, "eu-gb", "token", ".test.", false);
-        expect(res).toEqual(true);
-    });
-
-    test('valid output - staging - not imported + not only_imported', async () => {
-        const res = await main_func.add_cert_to_secret(parameters.SM_INSTANCE_CRN, "sm_instance_id",
-            parameters.SECRET_GROUP_NAME, cert_data_not_imported, "eu-gb", "token", ".test.", false);
-        expect(res).toEqual(true);
-    });
-
-
-});
-
-/////////////////////// create_secret tests ///////////////////////
-
-const create_secret_nock = nock(create_secret_url, req_data)
+const order_cert_nock = nock(order_cert_url, req_data)
     .persist()
-    .post(create_secret_endpoint)
+    .post(order_cert_endpoint)
     .reply(200, "");
 
-const create_secret_nock_400 = nock(create_secret_url_400, req_data)
+const order_cert_nock_400 = nock(order_cert_url_400, req_data)
     .persist()
-    .post(create_secret_endpoint)
+    .post(order_cert_endpoint)
     .reply(400, {"resources": [{"error_message": "error message 400"}]});
 
-const get_secret_group_id_nock_secret_400 = nock(get_secret_group_id_url_secret_400)
+const get_secret_group_id_nock_order_400 = nock(get_secret_group_id_order_400_url)
     .persist()
     .get(get_secret_group_id_endpoint)
     .reply(200, {"metadata": {"collection_total": 3},
         "resources": [{"name": "Group1", "id": "Group1 id"}, {"name": "Group2", "id": "Group2 id"},
             {"name": "Group3", "id": "Group3 id"}]});
 
-const create_secret_nock_500 = nock(create_secret_url_500, req_data)
+const order_cert_nock_500 = nock(order_cert_url_500, req_data)
     .persist()
-    .post(create_secret_endpoint)
-    .reply(500, {});
+    .post(order_cert_endpoint)
+    .reply(500, "");
 
-const get_secret_group_id_nock_secret_500 = nock(get_secret_group_id_url_secret_500)
+const get_secret_group_id_nock_order_500 = nock(get_secret_group_id_order_500_url)
     .persist()
     .get(get_secret_group_id_endpoint)
     .reply(200, {"metadata": {"collection_total": 3},
         "resources": [{"name": "Group1", "id": "Group1 id"}, {"name": "Group2", "id": "Group2 id"},
             {"name": "Group3", "id": "Group3 id"}]});
 
-//
+///
 
-const create_secret_nock_test = nock(create_secret_url_test, req_data)
+const order_cert_nock_test = nock(order_cert_url_test, req_data)
     .persist()
-    .post(create_secret_endpoint)
+    .post(order_cert_endpoint)
     .reply(200, "");
 
-const create_secret_nock_400_test = nock(create_secret_url_400_test, req_data)
+const order_cert_nock_400_test = nock(order_cert_url_400_test, req_data)
     .persist()
-    .post(create_secret_endpoint)
+    .post(order_cert_endpoint)
     .reply(400, {"resources": [{"error_message": "error message 400"}]});
 
-const get_secret_group_id_nock_secret_400_test = nock(get_secret_group_id_url_secret_400_test)
+const get_secret_group_id_nock_order_400_test = nock(get_secret_group_id_order_400_url_test)
     .persist()
     .get(get_secret_group_id_endpoint)
     .reply(200, {"metadata": {"collection_total": 3},
         "resources": [{"name": "Group1", "id": "Group1 id"}, {"name": "Group2", "id": "Group2 id"},
             {"name": "Group3", "id": "Group3 id"}]});
 
-const create_secret_nock_500_test = nock(create_secret_url_500_test, req_data)
+const order_cert_nock_500_test = nock(order_cert_url_500_test, req_data)
     .persist()
-    .post(create_secret_endpoint)
-    .reply(500, {});
+    .post(order_cert_endpoint)
+    .reply(500, "");
 
-const get_secret_group_id_nock_secret_500_test = nock(get_secret_group_id_url_secret_500_test)
+const get_secret_group_id_nock_order_500_test = nock(get_secret_group_id_order_500_url_test)
     .persist()
     .get(get_secret_group_id_endpoint)
     .reply(200, {"metadata": {"collection_total": 3},
         "resources": [{"name": "Group1", "id": "Group1 id"}, {"name": "Group2", "id": "Group2 id"},
             {"name": "Group3", "id": "Group3 id"}]});
 
-describe('create_secret test', () => {
+
+describe('order_cert tests', () => {
+
+    test('valid nock bluemix', async () => {
+        const res = await main_func.order_certificate("sm_token", cert_data_not_imported, "eu-gb",
+            "sm_instance_id", ".", undefined,
+            "ca_configuration_name cert", "dns_configuration_name cert");
+        expect(res).toEqual(undefined);
+    });
 
     test('Error 400 bluemix', async () => {
         let parameters_new = {...parameters};
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id_create_secret_400";
+        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id_400_order";
         const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 400:" +
-                    " error message 400. Error in request: " + create_secret_url_400 + create_secret_endpoint}});
+        expect(res).toEqual({"error": {"error": 'Certificate migration failed: Error: Error code 400:' +
+                ' error message 400. Error in request: '
+                + order_cert_url_400 + order_cert_endpoint}})
     });
 
     test('Error 500 bluemix', async () => {
         let parameters_new = {...parameters};
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id_create_secret_500";
+        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id_500_order";
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 500: " +
-                    "Something went wrong - please try again."}})
+                "Something went wrong - please try again."}})
+    });
+
+    test('valid nock staging', async () => {
+        const res = await main_func.order_certificate("sm_token", cert_data_not_imported, "eu-gb",
+            "sm_instance_id", ".test.", undefined,
+            "ca_configuration_name cert", "dns_configuration_name cert");
+        expect(res).toEqual(undefined);
     });
 
     test('Error 400 staging', async () => {
         let parameters_new = {...parameters};
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:staging:3:4:eu-gb:6:sm_instance_id_create_secret_400";
+        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:staging:3:4:eu-gb:6:sm_instance_id_400_order";
         const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 400:" +
-                    " error message 400. Error in request: " + create_secret_url_400_test + create_secret_endpoint}});
+        expect(res).toEqual({"error": {"error": 'Certificate migration failed: Error: Error code 400:' +
+                ' error message 400. Error in request: '
+                + order_cert_url_400_test + order_cert_endpoint}})
     });
 
     test('Error 500 staging', async () => {
         let parameters_new = {...parameters};
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:staging:3:4:eu-gb:6:sm_instance_id_create_secret_500";
+        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:staging:3:4:eu-gb:6:sm_instance_id_500_order";
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Error code 500: " +
-                    "Something went wrong - please try again."}})
+                "Something went wrong - please try again."}})
     });
 });
 
 
-/////////////////////// main function (cm_cert_copy) tests ///////////////////////
+/////////////////////// main function (sm_public_cert) tests ///////////////////////
 
-const get_cert_data_not_imported_nock = nock(get_cert_data_url)
-    .persist()
-    .get(get_cert_data_endpoint_not_imported)
-    .reply(200, cert_data_not_imported);
+describe('sm_public_cert tests', () => {
 
-const get_cert_data_not_imported_nock_test = nock(get_cert_data_test_url)
-    .persist()
-    .get(get_cert_data_endpoint_not_imported_test)
-    .reply(200, cert_data_not_imported);
+    test('CA_CONFIGURATION_NAME is missing', async () => {
+        const parameters_missing_one = {...parameters};
+        delete parameters_missing_one.CA_CONFIGURATION_NAME;
+        const data = await main_func.main(parameters_missing_one);
+        expect(data).toEqual({ "error": {"error": "Certificate migration failed: Error: " +
+                    "Parameter 'CA_CONFIGURATION_NAME' is missing" }});
+    });
 
-describe('cm_cert_copy test', () => {
+    test('DNS_PROVIDER_CONFIGURATION_NAME is missing', async () => {
+        const parameters_missing_one = {...parameters};
+        delete parameters_missing_one.DNS_PROVIDER_CONFIGURATION_NAME;
+        const data = await main_func.main(parameters_missing_one);
+        expect(data).toEqual({ "error": {"error": "Certificate migration failed: Error: " +
+                    "Parameter 'DNS_PROVIDER_CONFIGURATION_NAME' is missing" }});
+    });
 
-    test('invalid parameter ONLY_IMPORTED', async () => {
+    test('invalid parameter BUNDLE_CERTS', async () => {
         let parameters_new = {...parameters};
-        parameters_new.ONLY_IMPORTED = 'invalid';
+        parameters_new.BUNDLE_CERTS = 'invalid';
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({
-            "error": {"error": "Certificate migration failed: Error: Parameter 'ONLY_IMPORTED' is invalid"}
+            "error": {"error": "Certificate migration failed: Error: Parameter 'BUNDLE_CERTS' is invalid"}
         });
     });
 
-    test('valid input - CM = bluemix, SM = staging, only_imported = true, imported', async () => {
+    test('valid input CM = bluemix, SM = staging', async () => {
         const res = await main_func.main(parameters);
-        expect(res).toEqual({"message": "Certificate migrated successfully!"});
-    });
-
-    test('valid input - CM = bluemix, SM = staging, only_imported = true, not imported', async () => {
-        let parameters_new = {...parameters};
-        parameters_new.CERTIFICATE_ID = 'cert_id_not_imported';
-        const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Certificate: " +
-                    "cert_id_not_imported was not migrated since it's not an imported certificate. " +
-                    "If you wish to migrate it anyway, please change the value of the parameter " +
-                    "'ONLY_IMPORTED' to 'false'"}});
-
-    });
-
-    test('valid input - CM = bluemix, SM = staging, only_imported = false, imported', async () => {
-        let parameters_new = {...parameters};
-        parameters_new.ONLY_IMPORTED = 'false';
-        const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"message": "Certificate migrated successfully!"});
-
-    });
-
-    test('valid input - CM = bluemix, SM = staging, only_imported = false, not imported', async () => {
-        let parameters_new = {...parameters};
-        parameters_new.ONLY_IMPORTED = 'false';
-        parameters_new.CERTIFICATE_ID = 'cert_id_not_imported';
-        const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"message": "Certificate migrated successfully!"});
-
+        expect(res).toEqual({"message": "Certificate ordered successfully!"});
     });
 
     test('valid input CM = staging, SM = bluemix', async () => {
         let parameters_new = {...parameters};
         parameters_new.CM_INSTANCE_CRN = "cm_crn:1:staging:3:4:eu-gb";
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id";
-        const res = await main_func.main(parameters);
-        expect(res).toEqual({"message": "Certificate migrated successfully!"});
-    });
-
-    test('valid input - CM = staging, SM = bluemix, only_imported = true, not imported', async () => {
-        let parameters_new = {...parameters};
-        parameters_new.CERTIFICATE_ID = 'cert_id_not_imported';
-        parameters_new.CM_INSTANCE_CRN = "cm_crn:1:staging:3:4:eu-gb";
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id";
+        parameters_new.SM_INSTANCE_CRN = 'sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id';
         const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"error": {"error": "Certificate migration failed: Error: Certificate: " +
-                    "cert_id_not_imported was not migrated since it's not an imported certificate. " +
-                    "If you wish to migrate it anyway, please change the value of the parameter " +
-                    "'ONLY_IMPORTED' to 'false'"}});
-
-    });
-
-    test('valid input - CM = staging, SM = bluemix, only_imported = false, imported', async () => {
-        let parameters_new = {...parameters};
-        parameters_new.ONLY_IMPORTED = 'false';
-        parameters_new.CM_INSTANCE_CRN = "cm_crn:1:staging:3:4:eu-gb";
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id";
-        const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"message": "Certificate migrated successfully!"});
-
-    });
-
-    test('valid input - CM = staging, SM = bluemix, only_imported = false, not imported', async () => {
-        let parameters_new = {...parameters};
-        parameters_new.ONLY_IMPORTED = 'false';
-        parameters_new.CERTIFICATE_ID = 'cert_id_not_imported';
-        parameters_new.CM_INSTANCE_CRN = "cm_crn:1:staging:3:4:eu-gb";
-        parameters_new.SM_INSTANCE_CRN = "sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id";
-        const res = await main_func.main(parameters_new);
-        expect(res).toEqual({"message": "Certificate migrated successfully!"});
-
+        expect(res).toEqual({"message": "Certificate ordered successfully!"});
     });
 
 });
+
