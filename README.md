@@ -20,7 +20,7 @@ You can run the migration scripts from any Node.js environment, such as from you
 2. Download or clone this repository.
 
     ```sh
-    git clone https://github.ibm.com/security-services/secrets-manager-cm-migration-scripts.git
+    git clone https://github.com/security-services/secrets-manager-cm-migration-scripts.git
     ```
 
 3. In your project directory, install required packages using `npm`.
