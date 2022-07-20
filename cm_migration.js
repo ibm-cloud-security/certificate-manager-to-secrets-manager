@@ -22,6 +22,8 @@ module.exports = {"main": main, "parameters_validation": parameters_validation, 
     "get_instances_data": get_instances_data, "get_notification_number": get_notification_number,
     "order_certificate": order_certificate, "get_public_cert_data": get_public_cert_data};
 
+let cert_crn = null;
+
 async function main(parameters){
     let cm_apikey = process.env.CM_APIKEY;
     let script_name = process.env.SCRIPT_NAME;
@@ -35,6 +37,7 @@ async function main(parameters){
     let ca_configuration_name = process.env.CA_CONFIGURATION_NAME;
     let dns_configuration_name = process.env.DNS_PROVIDER_CONFIGURATION_NAME;
     let bundle_certs = process.env.BUNDLE_CERTS;
+    cert_crn = process.env.CERT_CRN;
 
     if(parameters !== undefined){
         if (parameters.CM_APIKEY) cm_apikey = parameters.CM_APIKEY;
@@ -49,6 +52,7 @@ async function main(parameters){
         if (parameters.CA_CONFIGURATION_NAME) ca_configuration_name = parameters.CA_CONFIGURATION_NAME;
         if (parameters.DNS_PROVIDER_CONFIGURATION_NAME) dns_configuration_name = parameters.DNS_PROVIDER_CONFIGURATION_NAME;
         if (parameters.BUNDLE_CERTS) bundle_certs = parameters.BUNDLE_CERTS;
+        if (parameters.CERT_CRN) cert_crn = parameters.CERT_CRN;
     }
 
     if(is_test_account === undefined){
@@ -666,7 +670,12 @@ async function get_secret_group_id(sm_instance_id, secret_group_name, location, 
 }
 
 async function get_cert_data(cm_crn, location, cert_id, cm_token, cm_api_prefix){
-    const crn_enc = encodeURIComponent((cm_crn.slice(0, -1) + 'certificate:' + cert_id));
+    let crn_enc;
+    if (cert_crn) {
+        crn_enc = encodeURIComponent(cert_crn)
+    } else {
+        crn_enc = encodeURIComponent((cm_crn.slice(0, -1) + 'certificate:' + cert_id));
+    }
     try{
         const data = await axios.get('https://' + location + '.certificate-manager' + cm_api_prefix + get_cert_endpoint + crn_enc , {
             headers: {
