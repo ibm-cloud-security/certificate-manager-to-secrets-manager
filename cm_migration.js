@@ -878,10 +878,12 @@ async function verifySuccessfulOrders(report_json, ordered_certs_list, sm_instan
         if (!response) {
             report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  "ordered successfully!";
             ordered_certs_list.splice(i, 1);
+            i--
         } else{
             if (response !== "Pre-activation"){
                 report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  `migration failed: ${response}`;
                 ordered_certs_list.splice(i, 1);
+                i--;
             }
         }
     }
