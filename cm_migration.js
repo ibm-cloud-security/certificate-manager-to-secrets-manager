@@ -230,12 +230,12 @@ async function sm_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, sec
             }
         }
 
-        await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
-        
-        console.log(bundle_certs);
+        let response = await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
+        let report_json = {}
+        await verifySuccessfulOrders(report_json, [{"id": response.data.resources[0].id, "name": response.data.resources[0].name}], sm_instance_id, sm_location, sm_api_prefix, sm_token, true);
 
-        console.log("Certificate ordered successfully!");
-        return { message: "Certificate ordered successfully!" };
+        console.log(report_json[`Certificate: '${response.data.resources[0].name}', id: ${response.data.resources[0].id}`]);
+        return { message: report_json[`Certificate: '${response.data.resources[0].name}', id: ${response.data.resources[0].id}`] };
 
     }
     catch(err){
@@ -286,7 +286,7 @@ async function sm_instance_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cer
                     console.log(`Processing certificate: '${cert_lst[i].name}', id: ${cert_lst[i].id}`);
                     const cert_data = await get_public_cert_data(cm_crn, cm_location, cert_lst[i].id, cm_token, cm_api_prefix);
                     let response = await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
-                    ordered_certs_list.push({"id": response.data.resources[0].id, "name": response.data.resources[0].name}); // check!!
+                    ordered_certs_list.push({"id": response.data.resources[0].id, "name": response.data.resources[0].name});
 
                     if (ordered_certs_list.length === 50){
                         await verifySuccessfulOrders(report_json, ordered_certs_list, sm_instance_id, sm_location, sm_api_prefix, sm_token, false);
@@ -829,11 +829,10 @@ async function order_certificate(sm_token, cert_data, sm_location, sm_instance_i
     }
 }
 
-async function waitForSecretState(sm_instance_id, sm_location, sm_api_prefix, secret_type, secret_id, sm_token, maximum_tries = 30, interval_wait_time = 2000) {
-    let error;
-    let tries = 0
+async function waitForSecretState(sm_instance_id, sm_location, sm_api_prefix, secret_type, secret_id, sm_token, maximum_tries = 30, interval_wait_time = 5000) {
+    let error = `Secret couldn't reach the expected state.`;
+    let tries = 0;
     while (tries < maximum_tries) {
-        error = `Secret couldn't reach the expected state.`;
         const response = await axios.get(`https://${sm_instance_id}.${sm_location}.secrets-manager${sm_api_prefix}appdomain.cloud/api/v1/secrets/${secret_type}/${secret_id}/metadata`, {
             headers: {
                 'Authorization': 'Bearer ' + sm_token,
@@ -846,7 +845,10 @@ async function waitForSecretState(sm_instance_id, sm_location, sm_api_prefix, se
                 return;
             } else if (current_secret.state_description === "Pre-activation") {
                 error = "Pre-activation";
-                console.log(`Certificate: '${current_secret.name}', id: ${secret_id} status is "Pre-activation". Waiting ${interval_wait_time} msc`);
+                if (maximum_tries !== 1){
+                    await wait(interval_wait_time);
+                    console.log(`Certificate: '${current_secret.name}', id: ${secret_id} status is "Pre-activation". Waiting ${interval_wait_time} msc`);
+                }
             } else {
                 if (current_secret.issuance_info) {
                     error = `${current_secret.issuance_info.error_message}. 
@@ -855,9 +857,7 @@ async function waitForSecretState(sm_instance_id, sm_location, sm_api_prefix, se
                 break;
             }
         }
-        await wait(interval_wait_time);
         tries++;
-
     }
     return error;
 }
@@ -876,9 +876,9 @@ async function verifySuccessfulOrders(report_json, ordered_certs_list, sm_instan
     for (let i=0; i<ordered_certs_list.length; i++){
         let response = await waitForSecretState(sm_instance_id, sm_location, sm_api_prefix, "public_cert", ordered_certs_list[i].id, sm_token, maximum_retries)
         if (!response) {
-            report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  "ordered successfully!";
+            report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  "Certificate ordered successfully!";
             ordered_certs_list.splice(i, 1);
-            i--
+            i--;
         } else{
             if (response !== "Pre-activation"){
                 report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  `migration failed: ${response}`;
