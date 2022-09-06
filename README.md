@@ -37,7 +37,7 @@ You can run the migration scripts from any Node.js environment, such as from you
 
     You can use the IBM Cloud CLI or console to create an action. To view your available actions in the console, click the **Menu** icon **> Functions > [Actions](https://cloud.ibm.com/functions/actions)**.
    
-2. Create an action that uses the **Node.js 12** runtime.
+2. Create an action that uses the **Node.js 16** runtime.
 </details>
 
 >**Tip:** Running these scripts locally? If you're not planning to run the migration scripts by using Cloud Functions, and you need further customizations, you can use our [Node.js SDK](https://github.com/IBM/secrets-manager-nodejs-sdk).
@@ -80,7 +80,7 @@ Before you can run this script, be sure that you have an IBM Cloud API key with 
 
 1. In the IBM Cloud console, click the **Menu** icon **> Functions > [Actions](https://cloud.ibm.com/functions/actions)**.
    
-    If you haven't created an action yet, create one using the Node.js 12 runtime.
+    If you haven't created an action yet, create one using the Node.js 16 runtime.
 2. Copy the content of the `cm_migration.js` file into your IBM Cloud Functions action code.
 3. Add the following parameters:
 
@@ -172,7 +172,7 @@ Before you can run this script, be sure that you have an IBM Cloud API key with 
 
 1. In the IBM Cloud console, click the **Menu** icon **> Functions > [Actions](https://cloud.ibm.com/functions/actions)**.
    
-    If you haven't created an action yet, create one using the Node.js 12 runtime.
+    If you haven't created an action yet, create one using the Node.js 16 runtime.
 2. Copy the content of the `cm_migration.js` file into your IBM Cloud Functions action code.
 3. Add the following parameters:
 
@@ -253,7 +253,7 @@ Before you can run this script, be sure that you have an IBM Cloud API key with 
 
 1. In the IBM Cloud console, click the **Menu** icon **> Functions > [Actions](https://cloud.ibm.com/functions/actions)**.
    
-    If you haven't created an action yet, create one using the Node.js 12 runtime.
+    If you haven't created an action yet, create one using the Node.js 16 runtime.
 2. Copy the content of the `cm_migration.js` file into your cloud function action code.
 3. Add the following parameters:
 
@@ -338,7 +338,7 @@ Before you can run this script, be sure that you have an IBM Cloud API key with 
 
 1. In the IBM Cloud console, click the **Menu** icon **> Functions > [Actions](https://cloud.ibm.com/functions/actions)**.
    
-    If you haven't created an action yet, create one using the Node.js 12 runtime.
+    If you haven't created an action yet, create one using the Node.js 16 runtime.
 2. Copy the content of the `cm_migration.js` file into your IBM Cloud Functions action code.
 3. Add the following parameters:
 
@@ -429,7 +429,7 @@ Before you can run this script, be sure that you have an IBM Cloud API key with 
 
 1. In the IBM Cloud console, click the **Menu** icon **> Functions > [Actions](https://cloud.ibm.com/functions/actions)**.
    
-    If you haven't created an action yet, create one using the Node.js 12 runtime.
+    If you haven't created an action yet, create one using the Node.js 16 runtime.
 2. Copy the content of the `cm_migration.js` file into your cloud function action code.
 3. Add the following parameters:
 
