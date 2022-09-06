@@ -95,6 +95,8 @@ const get_secret_group_id_order_500_url = 'https://sm_instance_id_500_order.eu-g
 
 const order_cert_endpoint = '/api/v1/secrets/public_cert';
 
+const get_ordered_cert_endpoint = '/api/v1/secrets/public_cert/cert2_test_id_not_imported/metadata';
+
 const order_cert_url_test = 'https://sm_instance_id.eu-gb.secrets-manager.test.appdomain.cloud';
 const order_cert_url_400_test = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.test.appdomain.cloud';
 const get_secret_group_id_order_400_url_test = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.test.appdomain.cloud';
@@ -144,6 +146,15 @@ const req_data = {
         }
     ]};
 
+const get_ordered_cert_nock_valid = nock(order_cert_url)
+    .persist()
+    .get(get_ordered_cert_endpoint)
+    .reply(200, {"resources": [{"state_description": "Active"}]});
+
+const get_ordered_cert_nock_valid_test = nock(order_cert_url_test)
+    .persist()
+    .get(get_ordered_cert_endpoint)
+    .reply(200, {"resources": [{"state_description": "Active"}]});
 
 /////////////////////// IAM token (get_token) tests ///////////////////////
 
