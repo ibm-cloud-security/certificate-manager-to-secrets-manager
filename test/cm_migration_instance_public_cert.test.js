@@ -1018,7 +1018,7 @@ describe('sm_instance_public_cert tests', () => {
     test('valid input CM = bluemix, SM = staging', async () => {
         const res = await main_func.main(parameters);
         expect(res).toEqual({"Certificate: 'cert2_test_not_imported', id: cert2_test_id_not_imported":
-                "ordered successfully!"});
+                "Certificate ordered successfully!"});
     });
 
     test('valid input CM = staging, SM = bluemix', async () => {
@@ -1027,7 +1027,7 @@ describe('sm_instance_public_cert tests', () => {
         parameters_new.SM_INSTANCE_CRN = 'sm-crn:1:bluemix:3:4:eu-gb:6:sm_instance_id';
         const res = await main_func.main(parameters_new);
         expect(res).toEqual({"Certificate: 'cert2_test_not_imported', id: cert2_test_id_not_imported":
-                "ordered successfully!"});
+                "Certificate ordered successfully!"});
     });
 
 });
