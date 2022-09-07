@@ -829,35 +829,26 @@ async function order_certificate(sm_token, cert_data, sm_location, sm_instance_i
     }
 }
 
-async function waitForSecretState(sm_instance_id, sm_location, sm_api_prefix, secret_type, secret_id, sm_token, maximum_tries = 30, interval_wait_time = 5000) {
+async function getSecretState(sm_instance_id, sm_location, sm_api_prefix, secret_type, secret_id, sm_token) {
     let error = `Secret couldn't reach the expected state.`;
-    let tries = 0;
-    while (tries < maximum_tries) {
-        const response = await axios.get(`https://${sm_instance_id}.${sm_location}.secrets-manager${sm_api_prefix}appdomain.cloud/api/v1/secrets/${secret_type}/${secret_id}/metadata`, {
-            headers: {
-                'Authorization': 'Bearer ' + sm_token,
-                'Content-Type': 'application/json'
-            }
-        });
-        if (response.status === 200) {
-            let current_secret = response.data.resources[0];
-            if (current_secret.state_description === "Active") {
-                return;
-            } else if (current_secret.state_description === "Pre-activation") {
-                error = "Pre-activation";
-                if (maximum_tries !== 1){
-                    await wait(interval_wait_time);
-                    console.log(`Certificate: '${current_secret.name}', id: ${secret_id} status is "Pre-activation". Waiting ${interval_wait_time} msc`);
-                }
-            } else {
-                if (current_secret.issuance_info) {
-                    error = `${current_secret.issuance_info.error_message}. 
+    const response = await axios.get(`https://${sm_instance_id}.${sm_location}.secrets-manager${sm_api_prefix}appdomain.cloud/api/v1/secrets/${secret_type}/${secret_id}/metadata`, {
+        headers: {
+            'Authorization': 'Bearer ' + sm_token,
+            'Content-Type': 'application/json'
+        }
+    });
+    if (response.status === 200) {
+        let current_secret = response.data.resources[0];
+        if (current_secret.state_description === "Active") {
+            return;
+        } else if (current_secret.state_description === "Pre-activation") {
+            error = "Pre-activation";
+        } else {
+            if (current_secret.issuance_info) {
+                error = `${current_secret.issuance_info.error_message}. 
                         Error code: ${current_secret.issuance_info.error_code}`
-                }
-                break;
             }
         }
-        tries++;
     }
     return error;
 }
@@ -868,24 +859,39 @@ async function wait(msc){
     })
 }
 
-async function verifySuccessfulOrders(report_json, ordered_certs_list, sm_instance_id, sm_location, sm_api_prefix, sm_token, last_run) {
-    let maximum_retries;
-    if (!last_run){
-        maximum_retries = 1;
-    }
-    for (let i=0; i<ordered_certs_list.length; i++){
-        let response = await waitForSecretState(sm_instance_id, sm_location, sm_api_prefix, "public_cert", ordered_certs_list[i].id, sm_token, maximum_retries)
-        if (!response) {
-            report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  "Certificate ordered successfully!";
-            ordered_certs_list.splice(i, 1);
-            i--;
-        } else{
-            if (response !== "Pre-activation"){
-                report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  `migration failed: ${response}`;
+async function verifySuccessfulOrders(report_json, ordered_certs_list, sm_instance_id, sm_location, sm_api_prefix, sm_token, last_run, maximum_retries = 30, interval_wait_time = 5000) {
+    let maximum_certs_list_length = ordered_certs_list.length;
+    let tries = 0;
+
+    while (tries < maximum_retries) {
+        for (let i=0; i<ordered_certs_list.length; i++){
+            let response = await getSecretState(sm_instance_id, sm_location, sm_api_prefix, "public_cert", ordered_certs_list[i].id, sm_token)
+            if (!response) {
+                report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  "Certificate ordered successfully!";
                 ordered_certs_list.splice(i, 1);
                 i--;
+            } else{
+                if (response !== "Pre-activation"){
+                    report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  `migration failed: ${response}`;
+                    ordered_certs_list.splice(i, 1);
+                    i--;
+                }
             }
         }
+        if (ordered_certs_list.length > 0 && (ordered_certs_list.length === maximum_certs_list_length || last_run)){
+            await wait(interval_wait_time);
+            tries++;
+        } else {
+            break;
+        }
     }
+    if (tries === maximum_retries) {
+        for (let i=0; i<ordered_certs_list.length; i++){
+            report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  `migration failed: Secret couldn't reach the expected state.`;
+            ordered_certs_list.splice(i, 1);
+            i--;
+        }
+    }
+
 }
 
