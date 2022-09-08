@@ -95,6 +95,8 @@ const get_secret_group_id_order_500_url = 'https://sm_instance_id_500_order.eu-g
 
 const order_cert_endpoint = '/api/v1/secrets/public_cert';
 
+const get_ordered_cert_endpoint = '/api/v1/secrets/public_cert/cert2_test_id_not_imported/metadata';
+
 const order_cert_url_test = 'https://sm_instance_id.eu-gb.secrets-manager.test.appdomain.cloud';
 const order_cert_url_400_test = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.test.appdomain.cloud';
 const get_secret_group_id_order_400_url_test = 'https://sm_instance_id_400_order.eu-gb.secrets-manager.test.appdomain.cloud';
@@ -144,6 +146,15 @@ const req_data = {
         }
     ]};
 
+const get_ordered_cert_nock_valid = nock(order_cert_url)
+    .persist()
+    .get(get_ordered_cert_endpoint)
+    .reply(200, {"resources": [{"state_description": "Active"}]});
+
+const get_ordered_cert_nock_valid_test = nock(order_cert_url_test)
+    .persist()
+    .get(get_ordered_cert_endpoint)
+    .reply(200, {"resources": [{"state_description": "Active"}]});
 
 /////////////////////// IAM token (get_token) tests ///////////////////////
 
@@ -434,7 +445,7 @@ describe('get_secret_group_id test', () => {
 const order_cert_nock = nock(order_cert_url, req_data)
     .persist()
     .post(order_cert_endpoint)
-    .reply(200, "");
+    .reply(200, {"resources": [{"id": "cert2_test_id_not_imported", "name": "cert2_test_not_imported"}]});
 
 const order_cert_nock_400 = nock(order_cert_url_400, req_data)
     .persist()
@@ -465,7 +476,7 @@ const get_secret_group_id_nock_order_500 = nock(get_secret_group_id_order_500_ur
 const order_cert_nock_test = nock(order_cert_url_test, req_data)
     .persist()
     .post(order_cert_endpoint)
-    .reply(200, "");
+    .reply(200, {"resources": [{"id": "cert2_test_id_not_imported", "name": "cert2_test_not_imported"}]});
 
 const order_cert_nock_400_test = nock(order_cert_url_400_test, req_data)
     .persist()
@@ -498,7 +509,8 @@ describe('order_cert tests', () => {
         const res = await main_func.order_certificate("sm_token", cert_data_not_imported, "eu-gb",
             "sm_instance_id", ".", undefined,
             "ca_configuration_name cert", "dns_configuration_name cert");
-        expect(res).toEqual(undefined);
+        expect(res.status).toEqual(200);
+        expect(res.data).toEqual({"resources": [{"id": "cert2_test_id_not_imported", "name": "cert2_test_not_imported"}]});
     });
 
     test('Error 400 bluemix', async () => {
@@ -522,7 +534,8 @@ describe('order_cert tests', () => {
         const res = await main_func.order_certificate("sm_token", cert_data_not_imported, "eu-gb",
             "sm_instance_id", ".test.", undefined,
             "ca_configuration_name cert", "dns_configuration_name cert");
-        expect(res).toEqual(undefined);
+        expect(res.status).toEqual(200);
+        expect(res.data).toEqual({"resources": [{"id": "cert2_test_id_not_imported", "name": "cert2_test_not_imported"}]});
     });
 
     test('Error 400 staging', async () => {

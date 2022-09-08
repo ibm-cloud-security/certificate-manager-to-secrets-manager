@@ -230,12 +230,12 @@ async function sm_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cert_id, sec
             }
         }
 
-        await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
+        let response = await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
+        let report_json = {}
+        await verifySuccessfulOrders(report_json, [{"id": response.data.resources[0].id, "name": response.data.resources[0].name}], sm_instance_id, sm_location, sm_api_prefix, sm_token, true);
 
-        console.log(bundle_certs);
-
-        console.log("Certificate ordered successfully!");
-        return { message: "Certificate ordered successfully!" };
+        console.log(report_json[`Certificate: '${response.data.resources[0].name}', id: ${response.data.resources[0].id}`]);
+        return { message: report_json[`Certificate: '${response.data.resources[0].name}', id: ${response.data.resources[0].id}`] };
 
     }
     catch(err){
@@ -279,21 +279,27 @@ async function sm_instance_public_cert(cm_apikey, sm_apikey, cm_crn, sm_crn, cer
         const cert_lst = await get_cert_list(false, cm_crn, cm_location, cm_api_prefix, cm_token, 200);
 
         let report_json = {};
+        let ordered_certs_list = [];
         for(let i=0; i<cert_lst.length; i++){
             if(!cert_lst[i].imported){
-                try{
-                    console.log("Processing certificate: '" + cert_lst[i].name + "', id: " + cert_lst[i].id);
+                try {
+                    console.log(`Processing certificate: '${cert_lst[i].name}', id: ${cert_lst[i].id}`);
                     const cert_data = await get_public_cert_data(cm_crn, cm_location, cert_lst[i].id, cm_token, cm_api_prefix);
-                    await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
-                    report_json["Certificate: '" + cert_lst[i].name + "', id: " + cert_lst[i].id] =  "ordered successfully!";
-                }
-                catch(err){
-                    report_json["Certificate: '" + cert_lst[i].name + "', id: " + cert_lst[i].id] =  "migration failed: " + err.message;
+                    let response = await order_certificate(sm_token, cert_data, sm_location, sm_instance_id, sm_api_prefix, secret_group_id, ca_configuration_name, dns_configuration_name, bundle_certs);
+                    ordered_certs_list.push({"id": response.data.resources[0].id, "name": response.data.resources[0].name});
+
+                    if (ordered_certs_list.length === 50){
+                        await verifySuccessfulOrders(report_json, ordered_certs_list, sm_instance_id, sm_location, sm_api_prefix, sm_token, false);
+                    }
+                } catch (error) {
+                    report_json[`Certificate: '${cert_lst[i].name}', id: ${cert_lst[i].id}`] =  `migration failed: ${error.message}`;
                 }
             }
         }
+        await verifySuccessfulOrders(report_json, ordered_certs_list, sm_instance_id, sm_location, sm_api_prefix, sm_token, true);
         console.log(report_json);
         return report_json;
+
     }
     catch(err){
         console.log(`Error: Certificate migration failed: ${err}`);
@@ -809,16 +815,83 @@ async function order_certificate(sm_token, cert_data, sm_location, sm_instance_i
             req_data.resources[0].description = undefined;
         }
 
-        await axios.post('https://' + sm_instance_id + '.' + sm_location + '.secrets-manager' + sm_api_prefix +
+        return await axios.post('https://' + sm_instance_id + '.' + sm_location + '.secrets-manager' + sm_api_prefix +
             order_cert_endpoint, req_data, {
             headers: {
                 'Authorization': 'Bearer ' + sm_token,
                 'Content-Type': 'application/json'
             }
         });
+
     }
     catch(err){
         catch_error(err, 2);
     }
+}
+
+async function getSecretState(sm_instance_id, sm_location, sm_api_prefix, secret_type, secret_id, sm_token) {
+    let error = `Secret couldn't reach the expected state.`;
+    const response = await axios.get(`https://${sm_instance_id}.${sm_location}.secrets-manager${sm_api_prefix}appdomain.cloud/api/v1/secrets/${secret_type}/${secret_id}/metadata`, {
+        headers: {
+            'Authorization': 'Bearer ' + sm_token,
+            'Content-Type': 'application/json'
+        }
+    });
+    if (response.status === 200) {
+        let current_secret = response.data.resources[0];
+        if (current_secret.state_description === "Active") {
+            return;
+        } else if (current_secret.state_description === "Pre-activation") {
+            error = "Pre-activation";
+        } else {
+            if (current_secret.issuance_info) {
+                error = `${current_secret.issuance_info.error_message}. 
+                        Error code: ${current_secret.issuance_info.error_code}`
+            }
+        }
+    }
+    return error;
+}
+
+async function wait(msc){
+    return new Promise((resolve) => {
+        setTimeout(resolve, msc);
+    })
+}
+
+async function verifySuccessfulOrders(report_json, ordered_certs_list, sm_instance_id, sm_location, sm_api_prefix, sm_token, last_run, maximum_retries = 30, interval_wait_time = 5000) {
+    let maximum_certs_list_length = ordered_certs_list.length;
+    let tries = 0;
+
+    while (tries < maximum_retries) {
+        for (let i=0; i<ordered_certs_list.length; i++){
+            let response = await getSecretState(sm_instance_id, sm_location, sm_api_prefix, "public_cert", ordered_certs_list[i].id, sm_token)
+            if (!response) {
+                report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  "Certificate ordered successfully!";
+                ordered_certs_list.splice(i, 1);
+                i--;
+            } else{
+                if (response !== "Pre-activation"){
+                    report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  `migration failed: ${response}`;
+                    ordered_certs_list.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+        if (ordered_certs_list.length > 0 && (ordered_certs_list.length === maximum_certs_list_length || last_run)){
+            await wait(interval_wait_time);
+            tries++;
+        } else {
+            break;
+        }
+    }
+    if (tries === maximum_retries) {
+        for (let i=0; i<ordered_certs_list.length; i++){
+            report_json[`Certificate: '${ordered_certs_list[i].name}', id: ${ordered_certs_list[i].id}`] =  `migration failed: Secret couldn't reach the expected state.`;
+            ordered_certs_list.splice(i, 1);
+            i--;
+        }
+    }
+
 }
 
