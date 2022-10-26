@@ -581,13 +581,17 @@ async function get_notification_number(location, crn_enc, cm_api_prefix, token){
 /////////// cm_cert_copy functions ///////////
 
 async function add_cert_to_secret(sm_crn, sm_instance_id, secret_group_name, cert_data, sm_location, sm_token, sm_api_prefix, only_imported){
-    const name = cert_data.name;
+    let name = cert_data.name;
     const description = cert_data.description;
     const private_key = cert_data.data.priv_key;
     const intermediate = cert_data.data.intermediate;
     const certificate_content = cert_data.data.content;
     const is_imported = cert_data.imported;
     let secret_group_id = secret_group_name;
+
+    if(name.charAt(0) === '*'){
+        name="star"+name.substring(1);
+    }
 
     if(!is_imported && only_imported){
         return false;

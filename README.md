@@ -129,6 +129,7 @@ Use this script to copy a single certificate from a Certificate Manager instance
 Keep in mind the following limitations:
 
 * Secrets Manager does not support secret names with spaces. If the name of the requested certificate contains spaces, the script will replace those spaces with dashes (`-`).
+* Secrets Manager does not support secret names that start with *. If the name of the requested certificate starts with *, the script will replace that with 'star'.
 * This script can't be run against instances that are accessible only through private service endpoints. 
 
 #### Instructions
@@ -211,6 +212,7 @@ Use this script to copy all of the imported certificates that are managed in a C
 Keep in mind the following limitations:
 
 * Secrets Manager does not support secret names with spaces. If the name of the requested certificate contains spaces, the script will replace those spaces with dashes (`-`).
+* Secrets Manager does not support secret names that start with *. If the name of the requested certificate starts with *, the script will replace that with 'star'.
 * This script can't be run against instances that are accessible only through private service endpoints. 
 
 #### Instructions
@@ -291,6 +293,7 @@ Use this script to order a single public certificate in a destination Secrets Ma
 Keep in mind the following limitations:
 
 * Secrets Manager does not support secret names with spaces. If the name of the requested certificate contains spaces, the script will replace those spaces with dashes (`-`).
+* Secrets Manager does not support secret names that start with *. If the name of the requested certificate starts with *, the script will replace that with 'star'.
 * This script can't be run against instances that are accessible only through private service endpoints. 
 
 #### Instructions
@@ -382,6 +385,7 @@ Use this script to order all public certificates in a destination Secrets Manage
 Keep in mind the following limitations:
 
 * Secrets Manager does not support secret names with spaces. If the name of the requested certificate contains spaces, the script will replace those spaces with dashes (`-`).
+* Secrets Manager does not support secret names that start with *. If the name of the requested certificate starts with *, the script will replace that with 'star'.
 * This script can't be run against instances that are accessible only through private service endpoints. 
 
 #### Instructions
